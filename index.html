@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Slimste Mens Timer</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --primary-orange: #ff5500;
+            --dark-bg: #121212;
+            --box-bg: #1e1e1e;
+            --text-light: #f0f0f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-orange);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        /* Setup Scherm */
+        #setup-screen, #game-screen, #finale-screen {
+            display: none;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        #setup-screen.active, #game-screen.active, #finale-screen.active {
+            display: block;
+        }
+
+        .setup-container {
+            background-color: var(--box-bg);
+            padding: 30px;
+            border-radius: 10px;
+            border-top: 4px solid var(--primary-orange);
+            margin-top: 50px;
+        }
+
+        input, select, button {
+            padding: 10px;
+            margin: 10px 5px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #2a2a2a;
+            color: white;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: var(--primary-orange);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background-color: #ff7733;
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* Game Scherm */
+        .round-info {
+            background-color: var(--box-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 2px solid var(--primary-orange);
+        }
+
+        .timers-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .timer-box {
+            background-color: var(--box-bg);
+            width: 22%;
+            min-width: 180px;
+            height: 400px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 10px;
+            box-sizing: border-box;
+            border: 2px solid #333;
+            position: relative;
+        }
+
+        .timer-box.active-timer {
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 20px rgba(255, 85, 0, 0.4);
+        }
+
+        .player-name {
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .score-display {
+            font-size: 60px;
+            font-family: monospace;
+            font-weight: bold;
+            color: var(--primary-orange);
+            margin: 20px 0;
+            text-shadow: 0 0 10px rgba(255, 85, 0, 0.5);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .controls button {
+            padding: 8px 12px;
+            font-size: 14px;
+            margin: 2px;
+        }
+
+        .btn-play { background-color: #28a745; }
+        .btn-stop { background-color: #dc3545; }
+        .btn-add { background-color: #007bff; }
+        .btn-finale { background-color: #800080; width: 100%; margin-top: 20px;}
+
+        /* Finale Specifiek */
+        .finale-drop-btn {
+            background-color: #dc3545;
+            font-size: 20px;
+            padding: 15px;
+            width: 90%;
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>De Slimste Mens Timer</h1>
+
+    <!-- SETUP SCHERM -->
+    <div id="setup-screen" class="active">
+        <div class="setup-container">
+            <h2>Nieuw Spel Starten</h2>
+            <div>
+                <label>Aantal spelers:</label>
+                <select id="player-count" onchange="updatePlayerInputs()">
+                    <option value="2">2 Spelers</option>
+                    <option value="3" selected>3 Spelers</option>
+                    <option value="4">4 Spelers</option>
+                </select>
+            </div>
+            <div id="name-inputs">
+                <!-- Wordt via JS gevuld -->
+            </div>
+            <div>
+                <label>Start seconden:</label>
+                <input type="number" id="start-time" value="60" style="width: 80px;">
+            </div>
+            <button onclick="startGame()" style="font-size: 18px; padding: 10px 30px; margin-top: 20px;">Start Spel</button>
+        </div>
+    </div>
+
+    <!-- GAME SCHERM -->
+    <div id="game-screen">
+        <div class="round-info">
+            <select id="round-selector" style="font-size: 24px; font-weight: bold;">
+                <option value="3-6-9">Ronde: 3-6-9</option>
+                <option value="Open Deur">Ronde: Open Deur</option>
+                <option value="Puzzel">Ronde: Puzzel</option>
+                <option value="Galerij">Ronde: Galerij</option>
+                <option value="Collectief Geheugen">Ronde: Collectief Geheugen</option>
+            </select>
+        </div>
+        <div class="timers-container" id="timers-container">
+            <!-- Timers worden hier gegenereerd -->
+        </div>
+        <button class="btn-finale" onclick="startFinale()">🚨 Start De Finale (Top 2) 🚨</button>
+    </div>
+
+    <!-- FINALE SCHERM -->
+    <div id="finale-screen">
+        <div class="round-info">
+            <h2 style="margin:0;">Ronde: DE FINALE</h2>
+        </div>
+        <div class="timers-container" id="finale-timers-container">
+            <!-- Finale timers komen hier -->
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let activeInterval = null;
+        let activePlayerIndex = null;
+
+        // Init setup inputs
+        function updatePlayerInputs() {
+            const count = document.getElementById('player-count').value;
+            const container = document.getElementById('name-inputs');
+            container.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                container.innerHTML += `<input type="text" id="p-name-${i}" placeholder="Naam Speler ${i+1}" value="Speler ${i+1}">`;
+            }
+        }
+
+        function startGame() {
+            const count = document.getElementById('player-count').value;
+            const startTime = parseInt(document.getElementById('start-time').value);
+            
+            players = [];
+            for (let i = 0; i < count; i++) {
+                const name = document.getElementById(`p-name-${i}`).value;
+                players.push({ name: name, score: startTime, id: i });
+            }
+
+            document.getElementById('setup-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            
+            renderTimers();
+        }
+
+        function renderTimers() {
+            const container = document.getElementById('timers-container');
+            container.innerHTML = '';
+
+            players.forEach((player, index) => {
+                container.innerHTML += `
+                    <div class="timer-box" id="box-${index}">
+                        <div class="player-name">${player.name}</div>
+                        <div class="score-display" id="score-${index}">${player.score}</div>
+                        <div class="controls">
+                            <button class="btn-play" onclick="toggleTimer(${index})">⏱️ Start/Stop</button>
+                            <button class="btn-add" onclick="adjustScore(${index}, 10)">+10s</button>
+                            <button class="btn-add" onclick="adjustScore(${index}, 20)">+20s</button>
+                            <button class="btn-add" onclick="adjustScore(${index}, 30)">+30s</button>
+                            <button onclick="adjustScore(${index}, -10)">-10s</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function adjustScore(index, amount) {
+            players[index].score += amount;
+            if (players[index].score < 0) players[index].score = 0;
+            updateDisplay();
+        }
+
+        function toggleTimer(index) {
+            // Stop huidige timer als er één loopt
+            if (activeInterval) {
+                clearInterval(activeInterval);
+                activeInterval = null;
+                document.querySelectorAll('.timer-box').forEach(b => b.classList.remove('active-timer'));
+                
+                // Als we op dezelfde speler klikten, blijft de timer gewoon gestopt
+                if (activePlayerIndex === index) {
+                    activePlayerIndex = null;
+                    return;
+                }
+            }
+
+            // Start nieuwe timer
+            activePlayerIndex = index;
+            document.getElementById(`box-${index}`).classList.add('active-timer');
+            
+            activeInterval = setInterval(() => {
+                if (players[activePlayerIndex].score > 0) {
+                    players[activePlayerIndex].score--;
+                    updateDisplay();
+                } else {
+                    toggleTimer(activePlayerIndex); // Stop als 0 is bereikt
+                }
+            }, 1000);
+        }
+
+        function updateDisplay() {
+            players.forEach((player, index) => {
+                const scoreEl = document.getElementById(`score-${index}`);
+                if (scoreEl) scoreEl.innerText = player.score;
+                
+                const finaleScoreEl = document.getElementById(`f-score-${index}`);
+                if (finaleScoreEl) finaleScoreEl.innerText = player.score;
+            });
+        }
+
+        // FINALE LOGICA
+        function startFinale() {
+            if (activeInterval) clearInterval(activeInterval);
+            
+            // Sorteer om de top 2 te vinden
+            let sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            let finalists = sortedPlayers.slice(0, 2);
+
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('finale-screen').classList.add('active');
+
+            const container = document.getElementById('finale-timers-container');
+            container.innerHTML = '';
+
+            finalists.forEach((player, i) => {
+                // In de finale: knop om seconden van de ANDERE speler af te trekken
+                let opponent = finalists[i === 0 ? 1 : 0];
+                
+                container.innerHTML += `
+                    <div class="timer-box" id="f-box-${player.id}" style="width: 40%;">
+                        <div class="player-name">${player.name}</div>
+                        <div class="score-display" id="f-score-${player.id}">${player.score}</div>
+                        <div class="controls" style="flex-direction: column; width: 100%;">
+                            <button class="btn-play" style="width: 90%; padding: 15px; font-size: 18px;" onclick="toggleFinaleTimer(${player.id})">Tijd Loopt / Stop</button>
+                            <button class="finale-drop-btn" onclick="dropOpponentScore(${opponent.id}, 10)">-10s bij ${opponent.name}</button>
+                            <button class="finale-drop-btn" onclick="dropOpponentScore(${opponent.id}, 20)">-20s bij ${opponent.name}</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleFinaleTimer(id) {
+            if (activeInterval) {
+                clearInterval(activeInterval);
+                activeInterval = null;
+                document.querySelectorAll('.timer-box').forEach(b => b.classList.remove('active-timer'));
+                if (activePlayerIndex === id) {
+                    activePlayerIndex = null;
+                    return;
+                }
+            }
+
+            activePlayerIndex = id;
+            document.getElementById(`f-box-${id}`).classList.add('active-timer');
+            
+            activeInterval = setInterval(() => {
+                let p = players.find(p => p.id === activePlayerIndex);
+                if (p.score > 0) {
+                    p.score--;
+                    updateDisplay();
+                } else {
+                    toggleFinaleTimer(activePlayerIndex);
+                }
+            }, 1000);
+        }
+
+        function dropOpponentScore(opponentId, amount) {
+            let opp = players.find(p => p.id === opponentId);
+            opp.score -= amount;
+            if (opp.score < 0) opp.score = 0;
+            updateDisplay();
+        }
+
+        // Init
+        updatePlayerInputs();
+    </script>
+</body>
+</html>
