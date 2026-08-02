@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>De Slimste Mens</title>
+    <title>De Slimste Mens - Speelse Editie</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -262,7 +262,7 @@
 </head>
 <body>
 
-    <h1>De Slimste Mens</h1>
+    <h1>Speelse Slimste Mens</h1>
 
     <!-- SETUP SCHERM -->
     <div id="setup-screen" class="active">
@@ -475,22 +475,14 @@
             finalists.forEach((player, i) => {
                 let opponent = finalists[i === 0 ? 1 : 0];
                 
-                // In de finale kan je 1 tot 5 trefwoorden juist hebben, dus -10 tot -50 seconden bij de tegenstander
+                // Enkel nog een start/stop knop en de -20 knop voor de tegenstander
                 container.innerHTML += `
-                    <div class="timer-box" id="f-box-${player.id}" style="width: 45%; max-width: 400px; height: auto;">
+                    <div class="timer-box" id="f-box-${player.id}" style="width: 45%; max-width: 400px; height: auto; padding-bottom: 30px;">
                         <div class="player-name" style="font-size: 30px;">${player.name}</div>
-                        <div class="score-display" id="f-score-${player.id}" style="font-size: 90px;">${player.score}</div>
+                        <div class="score-display" id="f-score-${player.id}" style="font-size: 100px;">${player.score}</div>
                         <div class="controls" style="flex-direction: column; width: 100%;">
-                            <button class="btn-play" style="padding: 15px; font-size: 20px; border-radius: 12px;" onclick="toggleFinaleTimer(${player.id})">▶ Tijd Loopt</button>
-                            <div style="display: flex; gap: 5px; width: 100%;">
-                                <button class="finale-drop-btn" onclick="dropOpponentScore(${opponent.id}, 10)">-10</button>
-                                <button class="finale-drop-btn" onclick="dropOpponentScore(${opponent.id}, 20)">-20</button>
-                                <button class="finale-drop-btn" onclick="dropOpponentScore(${opponent.id}, 30)">-30</button>
-                            </div>
-                            <div style="display: flex; gap: 5px; width: 100%;">
-                                <button class="finale-drop-btn" onclick="dropOpponentScore(${opponent.id}, 40)">-40</button>
-                                <button class="finale-drop-btn" onclick="dropOpponentScore(${opponent.id}, 50)">-50</button>
-                            </div>
+                            <button class="btn-play" style="padding: 20px; font-size: 22px; border-radius: 12px; margin-bottom: 20px;" onclick="toggleFinaleTimer(${player.id})">▶ Tijd Loopt / Stop</button>
+                            <button class="finale-drop-btn" style="padding: 20px; font-size: 22px; border-radius: 12px;" onclick="dropOpponentScore(${opponent.id}, 20)">📉 -20 bij ${opponent.name}</button>
                         </div>
                     </div>
                 `;
