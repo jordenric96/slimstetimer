@@ -42,7 +42,7 @@
         }
 
         /* Scherm containers gebruiken nu Flexbox om de hoogte perfect te vullen */
-        #setup-screen, #game-screen, #finale-screen {
+        #setup-screen, #game-screen, #finale-screen, #winner-screen {
             display: none;
             width: 100%;
             height: 100%;
@@ -50,7 +50,7 @@
             flex-direction: column;
         }
 
-        #setup-screen.active, #game-screen.active, #finale-screen.active {
+        #setup-screen.active, #game-screen.active, #finale-screen.active, #winner-screen.active {
             display: flex;
             animation: fadeIn 0.4s ease-out;
         }
@@ -60,12 +60,24 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* SETUP SCHERM */
+        /* SPECIALE ANIMATIE WINNAAR */
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        #winner-screen.active .setup-container {
+            animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border-color: var(--yellow);
+        }
+
+        /* SETUP & WINNAAR CONTAINER */
         .setup-container {
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             padding: 20px;
             border-radius: 20px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             border: 4px solid var(--teal);
             margin: auto; /* Centreert de box perfect in het midden */
             max-width: 600px;
@@ -230,6 +242,16 @@
         <div class="timers-container" id="finale-timers-container"></div>
     </div>
 
+    <!-- WINNAAR SCHERM -->
+    <div id="winner-screen">
+        <div class="setup-container" style="padding: 40px 20px;">
+            <h2 style="color: var(--pink); font-size: clamp(30px, 5vh, 45px); margin: 0;">🎉 WINNAAR! 🎉</h2>
+            <h1 id="winner-name" style="color: var(--teal); font-size: clamp(40px, 8vh, 80px); text-transform: uppercase; margin: 15px 0;">NAAM</h1>
+            <p style="font-size: clamp(18px, 3vh, 26px); font-weight: bold; color: var(--text-dark); margin-bottom: 30px;">Is De Slimste Mens ter Wereld!</p>
+            <button onclick="location.reload()" style="font-size: clamp(16px, 3vh, 24px); padding: 15px 40px; background-color: var(--teal);">Nieuw Spel Spelen</button>
+        </div>
+    </div>
+
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').catch(err => console.error("Service Worker mislukt", err));
@@ -238,8 +260,9 @@
         let players = [];
         let activeInterval = null;
         let activePlayerIndex = null;
+        let finaleFinalists = []; // Slaat op wie er in de finale zitten
         
-        // Exacte configuratie (1 t.e.m. 4 plus knoppen)
+        // Exacte configuratie
         const roundsConfig = [
             { name: "3-6-9", points: [20] },
             { name: "Open deur", points: [40] },
@@ -376,12 +399,12 @@
             });
         }
 
-        // FINALE LOGICA
+        // --- FINALE LOGICA --- //
         function startFinale() {
             if (activeInterval) clearInterval(activeInterval);
             
             let sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-            let finalists = sortedPlayers.slice(0, 2);
+            finaleFinalists = sortedPlayers.slice(0, 2);
 
             document.getElementById('game-screen').classList.remove('active');
             document.getElementById('finale-screen').classList.add('active');
@@ -389,8 +412,8 @@
             const container = document.getElementById('finale-timers-container');
             container.innerHTML = '';
 
-            finalists.forEach((player, i) => {
-                let opponent = finalists[i === 0 ? 1 : 0];
+            finaleFinalists.forEach((player, i) => {
+                let opponent = finaleFinalists[i === 0 ? 1 : 0];
                 
                 container.innerHTML += `
                     <div class="timer-box" id="f-box-${player.id}" style="width: 48%; max-width: 500px; margin: 0 auto;">
@@ -425,8 +448,11 @@
                 if (p.score > 0) {
                     p.score--;
                     updateDisplay();
-                } else {
-                    toggleFinaleTimer(activePlayerIndex);
+                    
+                    // Controleer of de tijd op 0 is gevallen tijdens het lopen
+                    if (p.score <= 0) {
+                        declareWinner(p.id); // De speler waarvan de tijd net afliep verliest.
+                    }
                 }
             }, 1000);
         }
@@ -434,9 +460,28 @@
         function dropOpponentScore(opponentId, amount) {
             let opp = players.find(p => p.id === opponentId);
             opp.score -= amount;
-            if (opp.score < 0) opp.score = 0;
-            updateDisplay();
-            bumpScoreEl(opponentId, 'f-score-');
+            
+            if (opp.score <= 0) {
+                opp.score = 0;
+                updateDisplay();
+                declareWinner(opponentId); // De speler die onder 0 wordt geklikt verliest.
+            } else {
+                updateDisplay();
+                bumpScoreEl(opponentId, 'f-score-');
+            }
+        }
+
+        function declareWinner(loserId) {
+            if (activeInterval) clearInterval(activeInterval);
+            
+            // Zoek wie de winnaar is (de finalist die NIET de loserId heeft)
+            let winner = finaleFinalists.find(p => p.id !== loserId);
+            
+            document.getElementById('finale-screen').classList.remove('active');
+            document.getElementById('winner-screen').classList.add('active');
+            
+            // Zet de naam van de winnaar in het scherm
+            document.getElementById('winner-name').innerText = winner.name;
         }
 
         updatePlayerInputs();
